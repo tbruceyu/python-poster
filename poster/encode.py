@@ -170,19 +170,27 @@ class MultipartParam(object):
                 assert value.name == name
                 retval.append(value)
                 continue
-            if hasattr(value, 'read'):
-                # Looks like a file object
-                filename = getattr(value, 'name', None)
-                if filename is not None:
-                    filetype = mimetypes.guess_type(filename)[0]
-                else:
-                    filetype = None
-
-                retval.append(cls(name=name, filename=filename,
-                    filetype=filetype, fileobj=value))
+            if isinstance(value,list):
+                for array_item in value:
+                    retval.append(MultipartParam._from_pair(name, array_item))
             else:
-                retval.append(cls(name, value))
+                retval.append(MultipartParam._from_pair(name, value))
         return retval
+    @classmethod
+    def _from_pair(cls, name, value):
+        if hasattr(value, 'read'):
+            # Looks like a file object
+            filename = getattr(value, 'name', None)
+            if filename is not None:
+                filetype = mimetypes.guess_type(filename)[0]
+            else:
+                filetype = None
+
+            element = cls(name=name, filename=filename,
+                    filetype=filetype, fileobj=value)
+        else:
+            element = cls(name, value)
+        return element
 
     def encode_hdr(self, boundary):
         """Returns the header of the encoding of this parameter"""
